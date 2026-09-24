@@ -1,13 +1,11 @@
 // authors  : Alexander Bass
 // created  : 2024
-// modified : 2024-5-12
+// modified : 2026-09-24
 
 // Originally, each individual namespaced svg element and attribute was added to create the play and pause buttons.
 // This took up a considerable amount of the file size, so they have been condensed into a few hacky hand-optimized lines.
 //
 // More traditionally, one might have these icons requested over the network, but that's a point of failure, and is much more hassle.
-
-import { CREATE_ELEMENT } from "./util";
 
 // Detect whether the client is in dark mode. The color scheme of the player is pretty good in most configurations, except for the play and pause icons.
 // The `dark` constant is used to make the icons lighter when dark mode is on.
@@ -20,7 +18,7 @@ let svgPost = " /></svg>";
 // The slimmest way of creating unique svg objects from a string I could find.
 // Unique objects are required to prevent extra characters being used to clone a reference each time an icon is used.
 let svgFromText = (input: string): SVGElement => {
-	let svgCreationContainer = CREATE_ELEMENT("div");
+	let svgCreationContainer = document.createElement("div");
 	// The input must be valid svg or else this code is unsafe.
 	svgCreationContainer.innerHTML = input;
 	return svgCreationContainer.firstChild as SVGElement;

@@ -4,14 +4,14 @@ A lightweight web widget to replace the standard `<audio>`. Gracefully degrades 
 
 Features
 
-- Less than 8KiB size (6,549B with room to grow)
+- Less than 8KiB size
 - Self contained. No extra stylesheets needed
 - Works with or without JavaScript
 - Keyboard Media keys support
 - Mostly standards conforming HTML
 - Dark mode support
 
-##  Usage
+## Usage
 
 The script is installed by inserting the following in the document head
 
@@ -47,16 +47,10 @@ A multi-track audio player is created by creating an ordered list of audio track
 </ol>
 ```
 
-
 ## Inspiration
 
-The fundamental principle behind this project is [Progressive Enhancement](https://indieweb.org/progressive_enhancement). The player should be usable for people even if they are using the browser without javascript, or with a slow internet connection. 
+The fundamental principle behind this project is [Progressive Enhancement](https://indieweb.org/progressive_enhancement). The player should be usable for people even if they are using the browser without javascript, or with a slow internet connection.
 
-The primary inspiration for this project is the [Scritch Player](https://github.com/torcado194/scritch-player
-), a music player meant to be easily embeddable within [itch.io](https://itch.io) pages.
+The primary inspiration for this project is the [Scritch Player](https://github.com/torcado194/scritch-player), a music player meant to be easily embeddable within [itch.io](https://itch.io) pages.
 
 The player design was inspired a bit by Scritch, but in decent part came from the design of the Bandcamp player ([example](https://c418.bandcamp.com/album/one)).
-
-## Development 
-
-This project is fairly bespoke in how it has been developed. These practices are detailed in [development.md](./DEVELOPMENT.md)

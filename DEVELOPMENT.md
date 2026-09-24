@@ -1,9 +1,7 @@
 # Development
 
-- [Build System](#build-system)
 - [General Description](#general-description)
-- [Bundle Size Reduction Techniques](#used-bundle-size-reduction-techniques)
-- [Unused techniques][#unused-techniques]
+- [Build System](#build-system)
 
 ## General Description
 
@@ -20,9 +18,7 @@ The other goals are as follows
 
 ## Build System
 
-The build system found within **build.mjs** is in essence a UNIX makefile. I would have written it in a makefile, but Node is already required to compile, so it only makes sense to stick with the ecosystem. Portability is an added plus of writing it in JavaScript too.
-
-This project does not use Webpack as its module bundling left a lot of unnecessary data in the final bundle. When I previously looked at it, I did not find a way to make this better.
+The build system found within **build.mjs** is in essence very similar to a UNIX makefile; it contains a simple sequence of steps.
 
 The build system has three stages:
 
@@ -42,50 +38,3 @@ npm run build-dev
 # Clean build directory
 npm run clean
 ```
-
-I have yet to look into other systems like Vite.
-
-## Used Bundle Size Reduction Techniques
-
-A main goal of this project is to make a very small script. The following not-industry-standard techniques have been used to achieve this goal. In the spirit of keeping the code somewhat readable, some extra-codegolfy methods have not been used.
-
-### `let` instead of `const`
-
-const is 5 bytes and let is three. Immutable references would be nice, using let shaves off a few bytes.
-
-### Alias All the Globals
-
-If a global variable, like `document` is used more than once, a global variable alias for it, `DOCUMENT` is made. The symbol is almost as readable as the original, except with the added benefit of being reducible to a single character by the minifier.
-
-Global aliases are found in `util.ts`
-
-### Arrow functions instead of proper functions
-
-Unless specifically needed, `function doThing(param)` is not used in favor of its shorter equivalent `let doThing=(param)=>`. This doesn't change readability very much so is an easy gain of a few bytes.
-
-### Use `el.onclick` instead of `el.addEventListener("click", ...)`
-
-Event listeners are to be avoided when not needed.
-
-### Use `el.append` instead of `el.appendChild`
-the `append` method is shorter than `appendChild` and also allows for appending multiple children at the same time.
-
-### Avoid TypeScript Enums
-Enums include runtime code for formatting to strings which is not needed for this project.
-
-### Create icons as SVG in code
-The method used is a bit freaky. There's no need to duplicate the comments in `icons.ts` so check them out.
-
-## Unused Techniques
-
-
-### Alias this
-Theres one final optimization which I wanted to use, but thought otherwise to it.
-The `this` keyword used inside of class methods and constructors takes up four bytes,
-but can easily be aliased to a single character. I chose not to do this as it felt very wrong,
-and would likely confuse people.
-
-
-### No classes?
-
-To be true,  I haven't explored this idea. It is possible that using classes wastes space. Perhaps free functions and objects would be more space efficient; I don't know. 

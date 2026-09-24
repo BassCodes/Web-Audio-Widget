@@ -1,17 +1,36 @@
 // authors  : Alexander Bass
 // created  : 2024
-// modified : 2024-5-25
+// modified : 2026-09-24
 
-import {
-	LOG,
-	CREATE_ELEMENT,
-	audioMetadataLoad,
-	formatDuration,
-	newElements,
-	APPEND_CHILDREN,
-	SET_TEXT_CONTENT,
-} from "./util";
+// Format a number to the form of `MM:SS` .
+// Does not support hours as lengths, though that could be nice for longer audio files
+let formatDuration = (time: number): string => {
+	let toStringPadZerosToStart = (n: number): string =>
+		(n || 0).toString().padStart(2, "0");
+	let seconds = Math.floor(time % 60);
+	let minutes = Math.floor(time / 60) % 60;
+
+	return `${toStringPadZerosToStart(minutes)}:${toStringPadZerosToStart(seconds)}`;
+};
+
+let audioMetadataLoad = (audio: HTMLAudioElement, callback: () => void): void => {
+	// I'm unsure of the validity of this method as it seems like it wouldn't catch all cases
+	// but it seems to work.
+	if (audio.duration) {
+		callback();
+	} else {
+		audio.addEventListener(
+			"loadedmetadata",
+			() => {
+				callback();
+			},
+			{ once: true }
+		);
+	}
+};
+
 import * as Icons from "./icons";
+import el from "./elementMaker.js";
 
 // Typescript enums automatically include code for formatting them to strings which is unneeded and takes up extra space
 export const STATUS_PLAYING = 0;
@@ -51,43 +70,32 @@ export class AudioPlayer {
 	// Actual current progress
 	progressBar: HTMLElement;
 
+	previousTrackButton?: HTMLButtonElement;
+	nextTrackButton?: HTMLButtonElement;
+	trackListElement?: HTMLElement;
+
 	constructor(tracks: Array<AudioTrack>) {
 		this.activeNo = 0;
 		this.tracks = tracks;
 		this.at = tracks[0];
 		this.status = STATUS_PAUSED;
 
-		[
-			this.UI,
-			this.timer,
-			this.progressBox,
-			this.progressBar,
-			this.activeTitle,
-			this.bottomBox,
-		] = newElements(
-			"div",
-			"RSCui",
-			"RSCtimer",
-			"RSCprogressBox",
-			"RSCprogress",
-			"",
-			"RSCbottom"
-		);
-		let [rightBox, top] = newElements("div", "", "RSCtop");
+		this.timer = el("div").id("RSCtimer").fin();
+		this.progressBar = el("div").id("RSCprogress").fin();
+		this.progressBox = el("div").id("RSCprogressBox").ch(this.progressBar).fin();
+		this.bottomBox = el("div").id("RSCbottom").ch(this.progressBox).fin();
 
-		this.button = CREATE_ELEMENT("button");
-		this.button.ariaLabel = "Play/Pause";
-		this.button.classList.add("RSCbutton", "RSCbigButton", "RSCplaypause");
+		this.button = el("button")
+			.cl("RSCbutton", "RSCbigButton", "RSCplaypause")
+			.at("aria-label", "Play/Pause")
+			.ch(Icons.playButton())
+			.fin();
 
-		APPEND_CHILDREN(this.progressBox, this.progressBar);
-		APPEND_CHILDREN(this.bottomBox, this.progressBox);
+		this.activeTitle = el("div").tx(this.at.title).fin();
+		let top = el("div").id("RSCtop").ch(this.activeTitle).ch(this.timer).fin();
 
-		SET_TEXT_CONTENT(this.activeTitle, this.at.title);
-		this.button.replaceChildren(Icons.playButton());
-
-		APPEND_CHILDREN(top, this.activeTitle, this.timer);
-		APPEND_CHILDREN(rightBox, top, this.bottomBox);
-		APPEND_CHILDREN(this.UI, this.button, rightBox);
+		let rightBox = el("div").ch(top).ch(this.bottomBox).fin();
+		this.UI = el("div").id("RSCui").ch(this.button).ch(rightBox).fin();
 
 		// Only display length of track once it is loaded
 		audioMetadataLoad(this.at.a, this.updateDuration.bind(this));
@@ -122,6 +130,109 @@ export class AudioPlayer {
 			this.progressBox.onmousemove = null;
 		};
 		this.switchTrack(0);
+
+		if (this.tracks.length > 1) {
+			this.trackListElement = el("ol").cl("audioGroup").fin();
+			this.previousTrackButton = el("button")
+				.at("aria-label", "Previous track")
+				.at("inter", "")
+				.cl("RSCbutton", "RSCskipbutton")
+				.ch(Icons.previousTrack())
+				.fin();
+
+			this.nextTrackButton = el("button")
+				.at("aria-label", "Next Track")
+				.cl("RSCbutton", "RSCskipbutton")
+				.ch(Icons.nextTrack())
+				.fin();
+
+			this.previousTrackButton.onclick = this.prev.bind(this);
+
+			this.nextTrackButton.onclick = (): void => {
+				this.next();
+			};
+			this.bottomBox.appendChild(this.previousTrackButton);
+			this.bottomBox.appendChild(this.nextTrackButton);
+			for (const [i, track] of this.tracks.entries()) {
+				let trackCard = this.setupTrackCard(i, track);
+				this.trackListElement.appendChild(trackCard);
+			}
+		}
+	}
+
+	private setupTrackCard(i: number, track: AudioTrack): HTMLElement {
+		const title = el("span").id("RSCtitle").tx(track.title).fin();
+		const duration = el("span").id("RSCtimer").fin();
+		const trackNumber = el("span")
+			.id("RSCord")
+			.tx(`${i + 1}.`)
+			.fin();
+
+		const button = el("button")
+			.cl("RSCbutton", "RSCsmallButton", "RSCplaypause")
+			.at("aria-label", "Play/Pause")
+			.ch(Icons.playButton())
+			.fin();
+
+		const audioCard = el("li")
+			.id("RSCcard")
+			.at("role", "listitem")
+			.ch(button)
+			.ch(trackNumber)
+			.ch(title)
+			.fin();
+
+		// If metadata is already loaded, format duration
+		// Else, wait for metadata load event and then format duration
+		audioMetadataLoad(track.a, () => {
+			duration.textContent = `${formatDuration(track.a.duration)}`;
+			audioCard.appendChild(duration);
+		});
+
+		if (track.a.error) {
+			button.classList.add("errored");
+			button.replaceChildren(Icons.errorButton());
+			duration.textContent = "track could not be loaded";
+		}
+
+		button.onclick = (): void => {
+			if (this.at != track) {
+				this.switchTrack(i);
+				this.activeNo = i;
+				this.play();
+			} else {
+				this.togglePlaying();
+			}
+		};
+
+		track.a.onplay = (): void => {
+			if (this.at != track) {
+				this.switchTrack(i);
+			}
+			button.replaceChildren(Icons.pauseButton());
+			title.style.fontWeight = "bold";
+		};
+
+		track.a.onpause = (): void => {
+			// If the active track is paused, then the big button at the top will also need to be set as the play button
+			if (this.at == track) {
+				this.setStatus(STATUS_PAUSED);
+			}
+			button.replaceChildren(Icons.playButton());
+			title.style.fontWeight = "";
+		};
+
+		track.a.onended = (): void => {
+			this.next();
+			button.replaceChildren(Icons.playButton());
+			if (this.at == track) this.setStatus(STATUS_PAUSED);
+		};
+
+		track.a.onerror = (e): void => {
+			console.log(e);
+			duration.textContent = "error";
+		};
+		return audioCard;
 	}
 
 	switchTrack(trackno: number): void {
@@ -135,8 +246,18 @@ export class AudioPlayer {
 		this.at.a.ontimeupdate = (): void => {
 			this.updateDuration();
 		};
-		SET_TEXT_CONTENT(this.activeTitle, this.at.title);
+		this.activeTitle.textContent = this.at.title;
 		this.activeNo = trackno;
+		if (this.isFirstTrack()) {
+			this?.previousTrackButton?.setAttribute("inert", "");
+		} else {
+			this?.previousTrackButton?.removeAttribute("inert");
+		}
+		if (this.isLastTrack()) {
+			this?.nextTrackButton?.setAttribute("inert", "");
+		} else {
+			this?.nextTrackButton?.removeAttribute("inert");
+		}
 	}
 
 	next(): void {
@@ -166,7 +287,7 @@ export class AudioPlayer {
 
 		let totalDuration = formatDuration(current_track.duration);
 		let currentTime = formatDuration(current_track.currentTime);
-		SET_TEXT_CONTENT(this.timer, `${currentTime} / ${totalDuration}`);
+		this.timer.textContent = `${currentTime} / ${totalDuration}`;
 		this.progressBar.style.width = `${
 			100 * (current_track.currentTime / current_track.duration || 0)
 		}%`;
@@ -190,7 +311,7 @@ export class AudioPlayer {
 				if (!this.isLastTrack()) {
 					this.next();
 				}
-				LOG(e, this.at.a.error);
+				console.log(e, this.at.a.error);
 			});
 	}
 

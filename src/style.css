@@ -1,3 +1,7 @@
+:root {
+	--rsc-font: "Nimbus Sans", "sans-serif";
+}
+
 #RSCui {
 	align-items: center;
 	gap: 9px;
@@ -23,7 +27,7 @@
 #RSCui,
 #RSCcard {
 	display: flex;
-	font-family: "nimbus sans", sans-serif;
+	font-family: var(--rsc-font, "Sans Serif");
 }
 
 .RSCbutton {

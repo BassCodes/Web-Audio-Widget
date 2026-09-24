@@ -1,10 +1,8 @@
 // authors  : Alexander Bass
-// created  : 2024-5-12
-// modified : 2024-5-25
+// created  : 2024-05-12
+// modified : 2026-09-24
 
 import { AudioPlayer, AudioTrack } from "./audioPlayer";
-import { MultiTrack } from "./multiTrackPlayer";
-import { QUERY_SELECTOR_ALL, LOG_ERROR } from "./util";
 
 // Finds candidate audio containers and collections their audio elements.
 // Creates Rucksack players and injects them into the document.
@@ -12,17 +10,17 @@ import { QUERY_SELECTOR_ALL, LOG_ERROR } from "./util";
 export let extractSingleData = (container: Element): AudioTrack | undefined => {
 	let title = container.textContent?.trim();
 	if (!title || title.length == 0) {
-		LOG_ERROR("RSC: audio title empty");
+		console.error("RSC: audio title empty");
 		return;
 	}
 
-	let audios = QUERY_SELECTOR_ALL(container, "audio[controls]");
+	let audios = container.querySelectorAll("audio[controls]");
 
 	if (audios.length > 1) {
-		LOG_ERROR(`RSC: audio with title ${title} has too many audio tags.`);
+		console.error(`RSC: audio with title ${title} has too many audio tags.`);
 		return;
 	} else if (audios.length == 0) {
-		LOG_ERROR(
+		console.error(
 			`RSC: track with title ${title} has no audio tag with 'controls' attribute`
 		);
 		return;
@@ -37,7 +35,7 @@ export let extractSingleData = (container: Element): AudioTrack | undefined => {
 export let getSinglePlayers = (): Array<AudioPlayer> => {
 	let players = [];
 
-	for (let container of QUERY_SELECTOR_ALL(document, "figure[data-rsc]")) {
+	for (let container of document.querySelectorAll("figure[data-rsc]")) {
 		let track = extractSingleData(container);
 		if (track) {
 			let player = new AudioPlayer([track]);
@@ -49,10 +47,10 @@ export let getSinglePlayers = (): Array<AudioPlayer> => {
 	return players;
 };
 
-export let getMultiPlayers = (): Array<MultiTrack> => {
-	return QUERY_SELECTOR_ALL(document, "ol[data-rsc]").map((container) => {
-		let p = new MultiTrack(
-			QUERY_SELECTOR_ALL(container, "li")
+export let getMultiPlayers = (): Array<AudioPlayer> => {
+	return [...document.querySelectorAll("ol[data-rsc]")].map((container) => {
+		let p = new AudioPlayer(
+			[...container.querySelectorAll("li")]
 				.map(extractSingleData)
 				.filter((t) => t) as Array<AudioTrack>
 		);
