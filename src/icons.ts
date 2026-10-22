@@ -1,6 +1,9 @@
 // authors  : Alexander Bass
+// license  : LGPL 3.0
 // created  : 2024
-// modified : 2026-09-24
+// modified : 2026-09-30
+
+import { el } from "./util";
 
 // Originally, each individual namespaced svg element and attribute was added to create the play and pause buttons.
 // This took up a considerable amount of the file size, so they have been condensed into a few hacky hand-optimized lines.
@@ -10,36 +13,26 @@
 // Detect whether the client is in dark mode. The color scheme of the player is pretty good in most configurations, except for the play and pause icons.
 // The `dark` constant is used to make the icons lighter when dark mode is on.
 
-let dark = matchMedia("(prefers-color-scheme: dark)")?.matches ? `fill="gray"` : "";
-// Yet another space saving measure; putting all of the preamble text of the svgs into one constant.
-// Additionally, `dark` is slotted in at this point.
-let svgPre = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" width="20" ${dark}><`;
+let svgPre = `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 1 1" width="20"><`;
 let svgPost = " /></svg>";
 // The slimmest way of creating unique svg objects from a string I could find.
 // Unique objects are required to prevent extra characters being used to clone a reference each time an icon is used.
 let svgFromText = (input: string): SVGElement => {
-	let svgCreationContainer = document.createElement("div");
+	let svgCreationContainer = el("div").fin();
 	// The input must be valid svg or else this code is unsafe.
-	svgCreationContainer.innerHTML = input;
+	svgCreationContainer.innerHTML = svgPre + input + svgPost;
 	return svgCreationContainer.firstChild as SVGElement;
 };
 
-export let playButton = (): SVGElement =>
-	svgFromText(`${svgPre}polygon points="0,0 0,1 1,0.5"${svgPost}`);
+export let playButton = (): SVGElement => svgFromText(`polygon points="0,0 0,1 1,0.5"`);
 
 export let pauseButton = (): SVGElement =>
-	svgFromText(
-		`${svgPre}rect width="0.25" height="1" /><rect width="0.25" x="0.75" height="1"${svgPost}`
-	);
+	svgFromText(`rect width="0.4" height="1" /><rect width="0.4" x="0.60" height="1"`);
 export let nextTrack = (): SVGElement =>
-	svgFromText(
-		`${svgPre}polygon points="0,0.1 0,0.9 0.5,0.5 0.5,0.9 1,0.5 0.5,0.1 0.5,0.5"${svgPost}`
-	);
+	svgFromText(`polygon points="0,0.1 0,0.9 0.5,0.5 0.5,0.9 1,0.5 0.5,0.1 0.5,0.5"`);
 export let previousTrack = (): SVGElement =>
-	svgFromText(
-		`${svgPre}polygon points="1,0.1 1,0.9 0.5,0.5 0.5,0.9 0,0.5 0.5,0.1 0.5,0.5"${svgPost}`
-	);
+	svgFromText(`polygon points="1,0.1 1,0.9 0.5,0.5 0.5,0.9 0,0.5 0.5,0.1 0.5,0.5"`);
 export let errorButton = (): SVGElement =>
 	svgFromText(
-		`${svgPre}polygon points="1,0.1 1,0.9 0.5,0.5 0.5,0.9 0,0.5 0.5,0.1 0.5,0.5"${svgPost}`
+		`rect width="0.3" height="0.2" x="0.35" y="0.8" /><rect width="0.3" x="0.35" height="0.6"`
 	);

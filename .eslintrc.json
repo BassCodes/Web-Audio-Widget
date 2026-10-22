@@ -25,10 +25,6 @@
             "warn",
             "unix"
         ],
-        "quotes": [
-            "warn",
-            "double"
-        ],
         "semi": [
             "warn",
             "always"
@@ -50,14 +46,12 @@
         "no-duplicate-imports":"warn",
         "no-useless-constructor":"warn",
         "no-loop-func":"warn",
-        "no-param-reassign":"warn",
         "prefer-arrow-callback":"warn",
         "no-array-constructor": "warn",
         "no-empty": "off",
         "prefer-const": "off",
         "no-self-compare": "warn",
         "eqeqeq": "off",
-        "@typescript-eslint/no-unused-vars": "warn",
-        "@typescript-eslint/explicit-function-return-type": "warn"
+        "@typescript-eslint/no-unused-vars": "warn"
     }
 }

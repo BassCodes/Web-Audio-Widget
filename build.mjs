@@ -1,7 +1,8 @@
 "use strict";
 // authors  : Alexander Bass
+// license  : LGPL 3.0
 // created  : 2024-5-13
-// modified : 2024-5-26
+// modified : 2026-10-22
 
 // Build script gluing Rollup, a customer CSS minifier, and terser together into three stages.
 
@@ -47,34 +48,34 @@ async function main() {
 
 const ROLLUP_OPTS = {
 	input: "src/index.ts",
-	plugins: [typescript()],
 	output: {
 		file: "build/stage1/bundle.js",
 		format: "iife",
 		sourcemap: true,
 	},
+	plugins: [typescript()],
 };
 
 // Stage 1
 async function compileAndBundle() {
-	console.log("| Building stage 1: Compiling Typescript and bundling...");
+	console.log("# Build stage 1: Compiling Typescript and bundling...");
 
 	const bundle = await rollup(ROLLUP_OPTS);
 	await bundle.write(ROLLUP_OPTS.output);
 
 	bundle.close();
-	console.log("Stage 1 Done.");
+	console.log("- Stage 1 Done.");
 }
 
 // Stage 2
 function injectCSS() {
-	console.log("| Building stage 2: Minifying and injecting css into bundle...");
+	console.log("# Build stage 2: Minifying and injecting css into bundle...");
 	const stylePath = path.resolve(SOURCE_DIRECTORY, "style.css");
 	const styleCSS = fs.readFileSync(stylePath).toString();
 
 	const finalCSS = cssMinify(styleCSS);
 
-	console.log(`Minified CSS Size ${finalCSS.length}B`);
+	console.log(`- Minified CSS Size ${finalCSS.length}B`);
 
 	const bundlePath = path.resolve(BUILD_DIRECTORY, "stage1", "bundle.js");
 	const bundle = fs.readFileSync(bundlePath).toString();
@@ -86,24 +87,25 @@ function injectCSS() {
 
 	const bundleWithInjectedCSS = bundle.replace(bundleTemplateString, `\`${finalCSS}\``);
 
-	console.log(`Unminified JS Size ${bundleWithInjectedCSS.length}B`);
-	console.log(`Unminified hash: "${sha256_hash_string(bundleWithInjectedCSS)}"`);
+	console.log(`- Unminified JS Size ${bundleWithInjectedCSS.length}B`);
+	console.log(`- Unminified hash: "${sha256_hash_string(bundleWithInjectedCSS)}"`);
 
 	const outputDirPath = path.resolve(BUILD_DIRECTORY, "stage2");
 	if (!fs.existsSync(outputDirPath)) {
 		fs.mkdirSync(outputDirPath, { recursive: true });
 	}
-	const outputFilePath = path.join(outputDirPath, "rucksack.js");
+	const outputFilePath = path.join(outputDirPath, "waw.js");
 	fs.writeFileSync(outputFilePath, bundleWithInjectedCSS);
 	fs.copyFileSync(
 		path.resolve(BUILD_DIRECTORY, "stage1", "bundle.js.map"),
 		path.join(outputDirPath, "bundle.js.map")
 	);
-	console.log("Stage 2 Done.");
+	console.log("- Stage 2 Done.");
 }
 
 function cssMinify(cssString) {
-	const noNewlines = cssString.replaceAll(/\n/g, "\\n");
+	const noComments = cssString.replaceAll(/\/\*.*\*\//g, "");
+	const noNewlines = noComments.replaceAll(/\n/g, "\\n");
 	const noTabs = noNewlines.replaceAll(/\t*/g, "");
 	const noUnneededSpacesAndNewlines = noTabs
 		.replaceAll("{\\n", "{")
@@ -113,21 +115,20 @@ function cssMinify(cssString) {
 		.replaceAll(";}", "}")
 		.replaceAll(", ", ",")
 		.replaceAll("\\n", "");
-	const noComments = noUnneededSpacesAndNewlines.replaceAll(/\/\*.*\*\//g, "");
-
-	return noComments;
+	return noUnneededSpacesAndNewlines;
 }
 
 // Stage 3
 function minifyJS() {
-	console.log("| Building stage 3: Minifying javascript...");
+	console.log("# Building stage 3: Minifying javascript...");
 	// Minify JS
 
-	const inputFilePath = path.resolve(BUILD_DIRECTORY, "stage2", "rucksack.js");
+	const inputFilePath = path.resolve(BUILD_DIRECTORY, "stage2", "waw.js");
 
 	const terserConfig = {
 		mangle: {
 			properties: true,
+			toplevel: true,
 		},
 		compress: {
 			booleans_as_integers: true,
@@ -141,26 +142,32 @@ function minifyJS() {
 			unsafe_math: true,
 			unsafe_methods: true,
 			unsafe_undefined: true,
+			hoist_funs: true,
+			passes: 4,
 		},
+		format: { semicolons: true },
 	};
 
-	const minifiedJS = minify_sync(
-		{
-			"bundle_with_css.js": fs.readFileSync(inputFilePath, "utf8"),
-		},
+	const minified_js = minify_sync(
+		{ "bundle_with_css.js": fs.readFileSync(inputFilePath, "utf8") },
 		terserConfig
 	).code;
+
+	const date = new Date();
+	const build_date = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, "0")}-${date.getUTCDate().toString().padStart(2, "0")}`;
+	const header = `Web Audio Widget. LGPL - 3.0. more info: https://alexanderbass.com. Built ${build_date}`;
+
+	const minified_js_with_header = `//${header}\n${minified_js}`;
 
 	const outputDirPath = path.resolve(BUILD_DIRECTORY, "stage3");
 	if (!fs.existsSync(outputDirPath)) {
 		fs.mkdirSync(outputDirPath, { recursive: true });
 	}
-	const outputFilePath = path.resolve(BUILD_DIRECTORY, "stage3", "rucksack.min.js");
-
-	console.log(`Minified JS Size ${minifiedJS.length}B`);
-	console.log(`Minified hash: "${sha256_hash_string(minifiedJS)}"`);
-	fs.writeFileSync(outputFilePath, minifiedJS);
-	console.log("Stage 3 Done.");
+	const outputFilePath = path.resolve(BUILD_DIRECTORY, "stage3", "waw.min.js");
+	console.log(`- Minified JS Size ${minified_js_with_header.length}B`);
+	console.log(`- Minified hash: "${sha256_hash_string(minified_js_with_header)}"`);
+	fs.writeFileSync(outputFilePath, minified_js_with_header);
+	console.log("- Stage 3 Done.");
 }
 
 function sha256_hash_string(str) {

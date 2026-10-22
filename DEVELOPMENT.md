@@ -1,26 +1,30 @@
 # Development
 
-- [General Description](#general-description)
-- [Build System](#build-system)
+General overview:
 
-## General Description
+- A custom build script `build.mjs` builds the project
+- Source code is written in TypeScript
+- TS is Compiled and bundled with Rollup
+- Styles are written in plain CSS
+- CSS is minified and injected into the output bundle during build
+- Bundle is minified aggressively with Terser
 
-The project is written in TypeScript. Typescript modules are compiled and bundled using [Rollup](https://rollupjs.org/). A custom build script (build.mjs) is used to minify CSS and inject it into the compiled bundle. As a final step [Terser](https://terser.org/) is used to reduce bundle size even further.
+Stylistically the code is designed to reduce file size:
 
-Many choices in this project have been to reduce the bundle size. In the current year of 2024, it truly doesn't matter (in most cases) if your page is 2MiB or 2KiB, it loads just the same. Consider the practices listed in this document an exercise in creating a small script.
+- The code avoids classes, instead opting for simple objects. This allows better minification and space savings from not using `this`
+- The code occasionally aliases builtin objects and methods, e.g. `window.addeventlistener`, `console.log`, etc.
+- Prefer `let` over `const`
+- Prefer arrow functions
 
-The other goals are as follows
+## Usage
 
-- Graceful degradation when script fails to load (blocked, error, etc.)
-- Clean simple interface
-- Semantic Markup
-- Accessible (need help with this one)
+To build the project, first install all dev-dependencies:
 
-## Build System
+```
+npm install
+```
 
-The build system found within **build.mjs** is in essence very similar to a UNIX makefile; it contains a simple sequence of steps.
-
-The build system has three stages:
+The build system is found within **build.mjs**. It has three stages:
 
 1. Compile Typescript and bundle modules
 2. Minify CSS and inject into bundle
